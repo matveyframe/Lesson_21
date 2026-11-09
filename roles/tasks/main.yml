@@ -1,0 +1,105 @@
+- name: install package
+  ansible.builtin.apt:
+    name:
+          - git
+          - python3-venv
+          - python3-pip
+          - postgresql
+          - acl
+          - libpq-dev
+    state: present
+    update_cache: true
+
+
+- name: create bd_user
+  ansible.builtin.command: psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_password  }}';"
+  become_user: postgres
+  ignore_errors: true
+
+
+
+- name: create db_shop
+  ansible.builtin.command: psql -c "CREATE DATABASE {{ db_name }} OWNER {{ db_user }};"
+  become_user: postgres
+  ignore_errors: true
+
+
+
+- name: git clone shop_37
+  ansible.builtin.git:
+    repo: https://github.com/anestesia001/shop-37.git
+    dest: "{{  app_dir }}"
+    version: main
+    force: true
+
+
+- name: remove ForeignKey from payments model
+  ansible.builtin.replace:
+    path: "{{ app_dir }}/payments/models.py"
+    regexp: 'mapped_column\(ForeignKey\("orders\.id"\), nullable=False\)'
+    replace: 'mapped_column(nullable=False)'
+
+
+
+- name: install requirements.txt
+  ansible.builtin.pip:
+    requirements: "{{ app_dir }}/requirements.txt"
+    virtualenv: "{{ app_dir }}/venv"
+    virtualenv_command: python3 -m venv
+
+
+
+- name: touch .env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+
+
+
+- name: unit systemd service
+  ansible.builtin.template:
+    src: shop_37.service.j2
+    dest: "/etc/systemd/system/shop-{{ item.name }}.service"
+  loop: "{{ services }}"
+
+
+
+- name: start shop_37 service
+  ansible.builtin.systemd:
+    name: shop_37
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ services }}"
+
+
+
+- name: start shop services
+  ansible.builtin.systemd:
+    name: "shop-{{ item.name }}"
+    enabled: true
+    state: restarted
+    daemon_reload: true
+  loop: "{{ services }}"
+
+
+- name: install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+
+
+- name: nginx reverse proxy
+  ansible.builtin.template:
+    src: shop_37.conf.j2
+    dest: /etc/nginx/sites-enabled/shop_37
+
+
+
+- name: resrtart nginx
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+    enabled: true

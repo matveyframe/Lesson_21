@@ -1,0 +1,11 @@
+db_host: 127.0.0.1
+app_name: shop_37
+app_dir: /opt/shop-37
+db_name: shop_db
+db_user: shop_user
+db_password: shop_password
+
+services:
+  - { name: catalog, module: "catalog.main:app", port: 8001 }
+  - { name: orders, module: "orders.main:app", port: 8002 }
+  - { name: payments, module: "payments.main:app", port: 8003 }
