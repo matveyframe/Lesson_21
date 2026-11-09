@@ -177,8 +177,8 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-![]( "Logo Title Text 1")
+![](https://github.com/matveyframe/Lesson_21/blob/main/Task_Result.PNG "Logo Title Text 1")
 
-![]( "Logo Title Text 1")
+![](https://github.com/matveyframe/Lesson_21/blob/main/BD_Result.PNG "Logo Title Text 1")
 
 
